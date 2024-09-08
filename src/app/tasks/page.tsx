@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation"; // Import useRouter for navigation
 import { db } from "../../firebase/clientApp";
 import {
 	collection,
@@ -28,45 +29,49 @@ const TasksPage = () => {
 		agentEmail: "",
 	});
 	const [error, setError] = useState<string>("");
+	const router = useRouter(); // Initialize the router
 
 	useEffect(() => {
-		const fetchTasks = async () => {
-			if (user) {
-				const q = query(
-					collection(db, "tasks"),
-					where(
-						user.role === "manager" ? "managerEmail" : "agentEmail",
-						"==",
-						user.email
-					)
-				);
-				const taskSnapshot = await getDocs(q);
-				setTasks(
-					taskSnapshot.docs.map(
-						(doc) => ({ id: doc.id, ...doc.data() } as Task)
-					)
-				);
-			}
-		};
+		// Check if user is null and redirect to login
+		if (!user) {
+			router.push("/login"); // Redirect to login page if user is not authenticated
+		} else {
+			fetchTasks(); // Fetch tasks if user is authenticated
+		}
+	}, [user, router]);
 
-		fetchTasks();
-	}, [user]);
+	// Function to fetch tasks
+	const fetchTasks = async () => {
+		if (user) {
+			const q = query(
+				collection(db, "tasks"),
+				where("managerEmail", "==", user.email) // Only fetch tasks for the logged-in manager
+			);
+			const taskSnapshot = await getDocs(q);
+			setTasks(
+				taskSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Task))
+			);
+		}
+	};
 
 	const handleAddTask = async (e: React.FormEvent) => {
-		e.preventDefault();
+		e.preventDefault(); // Prevent the default form submission behavior
 		try {
-			if (user) {
+			if (user && user.role === "manager") {
 				await addDoc(collection(db, "tasks"), {
 					name: newTask.name,
 					description: newTask.description,
-					managerEmail: user.role === "manager" ? user.email : "",
-					agentEmail: user.role === "agent" ? user.email : newTask.agentEmail,
+					managerEmail: user.email,
+					agentEmail: newTask.agentEmail,
 					createdAt: serverTimestamp(),
 					updatedAt: serverTimestamp(),
-					status: "Pending",
 				});
+				// Reset the newTask state after adding the task
 				setNewTask({ name: "", description: "", agentEmail: "" });
 				setError("");
+
+				// Fetch tasks again to update the task list
+				fetchTasks();
 			}
 		} catch (error) {
 			console.error("Error adding task:", error);
@@ -76,31 +81,31 @@ const TasksPage = () => {
 
 	return (
 		<div>
-			<h1>{user?.role === "manager" ? "Manager's" : "Agent's"} Tasks</h1>
-			<form onSubmit={handleAddTask}>
-				<h3>Add New Task</h3>
-				<label>
-					Name:
-					<input
-						type="text"
-						value={newTask.name}
-						onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
-						required
-					/>
-				</label>
-				<br />
-				<label>
-					Description:
-					<textarea
-						value={newTask.description}
-						onChange={(e) =>
-							setNewTask({ ...newTask, description: e.target.value })
-						}
-						required
-					></textarea>
-				</label>
-				<br />
-				{user?.role === "agent" && (
+			<h1>Tasks</h1>
+			{user && user.role === "manager" && (
+				<form onSubmit={handleAddTask}>
+					<h3>Add New Task</h3>
+					<label>
+						Name:
+						<input
+							type="text"
+							value={newTask.name}
+							onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
+							required
+						/>
+					</label>
+					<br />
+					<label>
+						Description:
+						<textarea
+							value={newTask.description}
+							onChange={(e) =>
+								setNewTask({ ...newTask, description: e.target.value })
+							}
+							required
+						></textarea>
+					</label>
+					<br />
 					<label>
 						Agent Email:
 						<input
@@ -112,11 +117,10 @@ const TasksPage = () => {
 							required
 						/>
 					</label>
-				)}
-				<br />
-				<button type="submit">Add Task</button>
-				{error && <p style={{ color: "red" }}>{error}</p>}
-			</form>
+					<br />
+					<button type="submit">Add Task</button>
+				</form>
+			)}
 
 			<h2>Task List</h2>
 			<table>
@@ -125,7 +129,6 @@ const TasksPage = () => {
 						<th>Name</th>
 						<th>Description</th>
 						<th>Agent Email</th>
-						<th>Status</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -139,6 +142,7 @@ const TasksPage = () => {
 					))}
 				</tbody>
 			</table>
+			{error && <p style={{ color: "red" }}>{error}</p>}
 		</div>
 	);
 };
