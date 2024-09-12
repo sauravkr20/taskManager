@@ -25,6 +25,7 @@ const LoginPage = () => {
 				where("password", "==", password)
 			);
 			const userSnapshot = await getDocs(q);
+			console.log("userSnapshot", userSnapshot);
 
 			if (userSnapshot.empty) {
 				setError("Invalid email or password");
@@ -32,6 +33,7 @@ const LoginPage = () => {
 			}
 
 			const user = userSnapshot.docs[0].data();
+
 			// Dispatch user details to the Redux store
 			dispatch(
 				setUser({
@@ -50,43 +52,50 @@ const LoginPage = () => {
 	};
 
 	return (
-		<div>
-			<h1>Login</h1>
-			<form onSubmit={handleSubmit}>
-				<label>
-					Email:
-					<input
-						type="email"
-						value={email}
-						onChange={(e) => setEmail(e.target.value)}
-						required
-					/>
-				</label>
-				<br />
-				<label>
-					Password:
-					<input
-						type="password"
-						value={password}
-						onChange={(e) => setPassword(e.target.value)}
-						required
-					/>
-				</label>
-				<br />
-				<label>
-					Role:
-					<select
-						value={role}
-						onChange={(e) => setRole(e.target.value as "manager" | "agent")}
+		<div className="flex justify-center items-center h-screen bg-gray-100">
+			<div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+				<h1 className="text-2xl font-bold mb-4">Login</h1>
+				<form onSubmit={handleSubmit} className="space-y-4">
+					<div>
+						<label className="block font-medium mb-1">Email:</label>
+						<input
+							type="email"
+							value={email}
+							onChange={(e) => setEmail(e.target.value)}
+							required
+							className="border border-gray-300 rounded-md px-4 py-2 w-full"
+						/>
+					</div>
+					<div>
+						<label className="block font-medium mb-1">Password:</label>
+						<input
+							type="password"
+							value={password}
+							onChange={(e) => setPassword(e.target.value)}
+							required
+							className="border border-gray-300 rounded-md px-4 py-2 w-full"
+						/>
+					</div>
+					<div>
+						<label className="block font-medium mb-1">Role:</label>
+						<select
+							value={role}
+							onChange={(e) => setRole(e.target.value as "manager" | "agent")}
+							className="border border-gray-300 rounded-md px-4 py-2 w-full"
+						>
+							<option value="manager">Manager</option>
+							<option value="agent">Agent</option>
+						</select>
+					</div>
+					<button
+						type="submit"
+						className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md w-full"
 					>
-						<option value="manager">Manager</option>
-						<option value="agent">Agent</option>
-					</select>
-				</label>
-				<br />
-				<button type="submit">Login</button>
-			</form>
-			{error && <p style={{ color: "red" }}>{error}</p>}
+						Login
+					</button>
+				</form>
+				{error && <p className="text-red-500 mt-4 font-medium">{error}</p>}
+			</div>
 		</div>
 	);
 };

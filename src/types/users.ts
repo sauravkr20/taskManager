@@ -20,7 +20,7 @@ export interface Agent {
 }
 
 export interface Task {
-	id?: string;
+	id: string;
 	name: string;
 	description: string;
 	managerEmail: string;
